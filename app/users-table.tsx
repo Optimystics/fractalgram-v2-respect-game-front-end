@@ -8,19 +8,22 @@ import {
   TableBody,
   Table
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+
 import { useRouter } from 'next/navigation';
-import { User } from '@/lib/dtos/user.dto';
+import { RespectUser } from '@/lib/dtos/respect-user.dto';
 import { useEffect, useState } from 'react';
 import { createConsensusSessionAndUserGroupAction, getUsers } from '@/app/actions';
 import toast from 'react-hot-toast';
 import { Spinner } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@chakra-ui/react';
+import { SESSION_POLLING_INTERVAL } from '../data/constants/app_constants';
+import { RiCheckboxCircleFill } from 'react-icons/ri';
 
 
 export function UsersTable() {
   const router = useRouter();
-  const [users, setUsers] = useState<Partial<User[]>>([]);
+  const [users, setUsers] = useState<Partial<RespectUser[]>>([]);
   const [query, setQuery] = useState('');
   const [groupAddresses, setGroupAddresses] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +32,8 @@ export function UsersTable() {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const result: Partial<User[]> | unknown = await getUsers(query, offset);
-        const users = result as Partial<User[]>;
+        const result: Partial<RespectUser[]> | unknown = await getUsers(query, offset);
+        const users = result as Partial<RespectUser[]>;
         setUsers(users || []);
       } catch (error) {
         toast.error('Could not fetch Users!');
@@ -38,7 +41,7 @@ export function UsersTable() {
       }
     };
     fetchUserData();
-    const interval = setInterval(fetchUserData, 5000);
+    const interval = setInterval(fetchUserData, SESSION_POLLING_INTERVAL);
     return () => clearInterval(interval);
   }, [query, offset]);
 
@@ -59,10 +62,8 @@ export function UsersTable() {
     <>
       {(
         <Button
-          className="mt-4 w-40 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           disabled={groupAddresses?.length <= 1}
-          onClick={() => createSessionHandler()}
-        >
+          onClick={() => createSessionHandler()}>
           Create Session ({groupAddresses?.length || 0})
         </Button>
       )}
@@ -74,6 +75,7 @@ export function UsersTable() {
               <TableHead className="max-w-[50px]"></TableHead>
               <TableHead className="max-w-[150px]">Name</TableHead>
               <TableHead className="hidden md:table-cell">Email</TableHead>
+              <TableHead className="hidden md:table-cell">Wallet Address</TableHead>
               <TableHead className="hidden md:table-cell">Username</TableHead>
               <TableHead className="hidden md:table-cell">Logged In</TableHead>
             </TableRow>
@@ -91,7 +93,7 @@ export function UsersTable() {
 }
 
 function UserRow({ user, groupAddresses, setGroupAddresses }: {
-  user: User,
+  user: RespectUser,
   groupAddresses: string[],
   setGroupAddresses: any
 }) {
@@ -113,10 +115,11 @@ function UserRow({ user, groupAddresses, setGroupAddresses }: {
       </TableCell>
       <TableCell className="font-medium">{user.name}</TableCell>
       <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+      <TableCell className="font-medium">{user.walletaddress}</TableCell>
       <TableCell>{user.username}</TableCell>
       <TableCell>
         {
-          user.loggedin && <Badge color={'green'}>Logged In</Badge>
+          user.loggedin && <RiCheckboxCircleFill color={'green'} size={24} />
         }
         {
           !user.loggedin && <Badge color={'red'}>Not Logged In</Badge>

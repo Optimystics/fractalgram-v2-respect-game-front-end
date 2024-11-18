@@ -1,27 +1,31 @@
-import { UsersTable } from '@/app/users-table';
-import { isLoggedInUserAdmin } from '@/app/actions';
-import { Welcome } from '@/components/welcome/welcome';
+'use client';
+import { usePrivy } from '@privy-io/react-auth';
+import { useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { AuthContext } from '../data/context/Contexts';
 
-export default async function IndexPage({
-  searchParams
-}: {
-  searchParams: { q: string; offset: string };
-}) {
-  const isAdmin = await isLoggedInUserAdmin();
-  const search = searchParams.q ?? '';
-  const offset = searchParams.offset ?? 0;
-  const users = [];
-  const newOffset = 0;
+export default function IndexPage() {
+  const router = useRouter();
+  const authContext = useContext(AuthContext);
+  const { ready, authenticated } = usePrivy();
 
-  return (
-    <main className="flex flex-1 flex-col p-4 md:p-6">
-      <div className="flex items-center mb-8">
-        <h1 className="font-semibold text-lg md:text-2xl">{ isAdmin ? 'User Admin' : 'Welcome!!'}</h1>
-      </div>
-      <div className="w-full mb-4">
-        {/*<Search value={searchParams.q} />*/}
-      </div>
-      { isAdmin ? <UsersTable /> : <Welcome />}
-    </main>
-  );
+  function routeToAppropriatePage() {
+    if (authContext.isLoggedIn && !authContext.hasProfile) {
+      router.push('/profile');
+    } else if (authContext.hasProfile && authContext.isAdmin) {
+      router.push('/groups');
+    } else if (authContext.hasProfile && !authContext.isAdmin) {
+      router.push('/play');
+    }
+  }
+
+  useEffect(() => {
+    if (ready && !authenticated) {
+      router.push('/login');
+    } else if (ready && authenticated && !authContext.isFirstAuthContextInit) {
+      routeToAppropriatePage();
+    }
+  }, [ready, authenticated, router, authContext]);
+
+  return (<main className="flex flex-1 flex-col"></main>);
 }
